@@ -1,0 +1,16 @@
+# Python dependencies matching Dockerfile (conda -> pip)
+numpy
+scipy
+matplotlib
+pandas
+jupyterlab
+opencv-python
+torch
+torchvision
+torchaudio
+faiss-cpu
+streamlit
+tqdm
+scikit-learn
+tensorboard
+setuptools>=60,<82
