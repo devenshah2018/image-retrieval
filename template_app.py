@@ -48,4 +48,4 @@ for i, col in enumerate(cols):
 if uploaded_file:
     st.sidebar.header("Uploaded Image")
     image = Image.open(uploaded_file)
-    st.sidebar.image(image, use_column_width=True)
+    st.sidebar.image(image, width=True)

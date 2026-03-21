@@ -14,3 +14,5 @@ tqdm
 scikit-learn
 tensorboard
 setuptools>=60,<82
+seaborn
+tensorflow-metal
