@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Notebooks · Image retrieval{% endblock %}
+
+{% block content %}
+<header class="page-hero page-hero--query">
+  <div class="page-hero-text">
+    <p class="eyebrow">Repository</p>
+    <h1 class="page-title">Notebooks</h1>
+  </div>
+</header>
+
+<div class="notebooks-layout">
+  {% if notebooks %}
+  <ul class="notebooks-list">
+    {% for nb in notebooks %}
+    <li>
+      <a class="notebooks-link" href="{{ nb.url }}" target="_blank" rel="noopener noreferrer">
+        <span class="notebooks-link-title">{{ nb.title }}</span>
+        <span class="notebooks-link-meta mono">{{ nb.url }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No notebook links configured. Add entries to <span class="mono">flask-webapp/notebooks.json</span>.</p>
+  {% endif %}
+</div>
+{% endblock %}

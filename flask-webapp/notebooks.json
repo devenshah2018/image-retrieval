@@ -1,0 +1,18 @@
+[
+  {
+    "title": "Feature Extraction",
+    "url": "https://github.com/devenshah2018/image-retrieval/blob/main/notebooks/feature_extraction.ipynb"
+  },
+  {
+    "title": "Retrieval using Classification",
+    "url": "https://github.com/devenshah2018/image-retrieval/blob/main/notebooks/retrieval_using_classification.ipynb"
+  },
+  {
+    "title": "Resnet Retrieval",
+    "url": "https://github.com/devenshah2018/image-retrieval/blob/main/notebooks/transferlearning-resnet-retrieval.ipynb"
+  },
+  {
+    "title": "Model Evaluation",
+    "url": "https://github.com/devenshah2018/image-retrieval/blob/main/notebooks/model_evaluation_metrics.ipynb"
+  }
+]

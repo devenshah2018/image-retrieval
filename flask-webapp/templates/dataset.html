@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Dataset · Image retrieval{% endblock %}
+
+{% block initial_toasts %}
+{% if not dataset_root_exists %}
+{{ [{'category': 'error', 'html': '<p>Folder not found: <span class="mono">' ~ dataset_root_display|e ~ '</span>.</p><p>Add the Caltech-101 dataset under <code class="train-code">webapp/caltech101/</code> (e.g. <code class="train-code">101_ObjectCategories/&lt;class&gt;/image_*.jpg</code>).</p>', 'wide': true}] | tojson }}
+{% else %}
+[]
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<header class="page-hero page-hero--compact page-hero--query">
+  <div>
+    <p class="eyebrow">Local data</p>
+    <h1 class="page-title">Caltech-101 Dataset</h1>
+  </div>
+</header>
+
+<div class="dataset-layout">
+  {% if dataset_root_exists %}
+    <div class="dataset-toolbar">
+      <form class="dataset-search-form" method="get" action="{{ url_for('main.dataset_page') }}">
+        {% if dataset_rel %}
+          <input type="hidden" name="path" value="{{ dataset_rel }}">
+        {% endif %}
+        <label class="dataset-search-label" for="dataset-q">Search folders</label>
+        <div class="dataset-search-row">
+          <input class="input dataset-search-input" type="search" id="dataset-q" name="q" value="{{ q }}" placeholder="Folder name contains…" autocomplete="off">
+          <button type="submit" class="btn btn-secondary">Search</button>
+          {% if q %}
+            <a class="btn btn-ghost" href="{{ url_for('main.dataset_page', path=dataset_rel) if dataset_rel else url_for('main.dataset_page') }}">Clear</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <nav class="dataset-breadcrumb" aria-label="Path">
+      <a href="{{ url_for('main.dataset_page') }}">caltech101</a>
+      {% for label, cum in crumbs %}
+        <span class="dataset-bc-sep" aria-hidden="true">/</span>
+        <a href="{{ url_for('main.dataset_page', path=cum) }}">{{ label }}</a>
+      {% endfor %}
+    </nav>
+
+    {% if q %}
+      <section class="dataset-section">
+        <h2 class="dataset-section-title">Matching folders</h2>
+        {% if search_hits %}
+          <ul class="dataset-search-list">
+            {% for hit in search_hits %}
+              <li>
+                <a href="{{ url_for('main.dataset_page', path=hit) }}" class="dataset-folder-hit">{{ hit }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">No folder names contain “{{ q }}”.</p>
+        {% endif %}
+      </section>
+    {% else %}
+      {% if browse_error %}
+        <p class="text-warn">{{ browse_error }}</p>
+      {% else %}
+        {% if dirs %}
+          <section class="dataset-section">
+            <h2 class="dataset-section-title">Folders</h2>
+            <div class="dataset-folder-grid">
+              {% for d in dirs %}
+                {% set dr = dataset_rel + '/' + d if dataset_rel else d %}
+                <a class="dataset-folder-card" href="{{ url_for('main.dataset_page', path=dr) }}">
+                  <span class="dataset-folder-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                  </span>
+                  <span class="dataset-folder-name">{{ d }}</span>
+                </a>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+
+        {% if files %}
+          <section class="dataset-section">
+            <h2 class="dataset-section-title">Images</h2>
+            <div class="dataset-image-grid">
+              {% for f in files %}
+                {% set fp = dataset_rel + '/' + f if dataset_rel else f %}
+                <figure class="dataset-thumb">
+                  <a href="{{ url_for('main.dataset_file', rel_path=fp) }}" target="_blank" rel="noopener noreferrer" class="dataset-thumb-link">
+                    <img src="{{ url_for('main.dataset_file', rel_path=fp) }}" alt="{{ f }}" loading="lazy">
+                  </a>
+                  <figcaption class="dataset-thumb-cap">{{ f }}</figcaption>
+                </figure>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+
+        {% if not dirs and not files %}
+          <p class="muted">This folder is empty.</p>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

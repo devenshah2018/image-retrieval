@@ -1,0 +1,114 @@
+{# Rclone UI for Query page; collapsed by default. Optional rclone_redirect (default index). #}
+{% set rclone_redirect = rclone_redirect|default('index') %}
+{% if not rclone_available %}
+  <p class="query-rclone-unavailable muted small">rclone not on PATH — install to load from cloud.</p>
+{% else %}
+<details class="query-rclone-details">
+  <summary class="query-rclone-summary">Load from cloud · rclone</summary>
+  <div class="query-rclone-inner">
+    <div class="rclone-toolbar rclone-toolbar--compact">
+      <form method="post" action="{{ url_for('main.rclone_refresh') }}">
+        <input type="hidden" name="redirect_to" value="{{ rclone_redirect }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Refresh remotes</button>
+      </form>
+      <form method="post" action="{{ url_for('main.rclone_rcd_start') }}">
+        <input type="hidden" name="redirect_to" value="{{ rclone_redirect }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Start config server</button>
+      </form>
+      <form method="post" action="{{ url_for('main.rclone_rcd_stop') }}">
+        <input type="hidden" name="redirect_to" value="{{ rclone_redirect }}">
+        <button type="submit" class="btn btn-ghost btn-sm">Stop config server</button>
+      </form>
+    </div>
+
+    {% if rcd_alive %}
+      <div class="callout callout-blue query-rclone-callout">
+        <p class="mb-0">Open <strong>Configs</strong> in the rclone window to add Google Drive or other remotes.</p>
+        <p class="mt-sm"><a class="link" href="{{ rcd_url }}" target="_blank" rel="noopener noreferrer">Open rclone web GUI</a></p>
+        {% if rcd_user and rcd_password %}
+          <pre class="mono mono-block mt-sm">User: {{ rcd_user }}
+Pass: {{ rcd_password }}</pre>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if remotes %}
+      <div class="rclone-section rclone-section--compact">
+        <span class="rclone-kicker">Remote</span>
+        <form class="form rclone-remote-row" method="post" action="{{ url_for('main.rclone_set_remote') }}">
+          <input type="hidden" name="redirect_to" value="{{ rclone_redirect }}">
+          <div class="field-row field-row--remote">
+            <select class="input" id="rclone_remote_query" name="rclone_remote" aria-label="Remote">
+              {% for r in remotes %}
+                <option value="{{ r }}" {% if r == session.get('rclone_remote') %}selected{% endif %}>{{ r }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="rclone-section rclone-section--compact">
+        <span class="rclone-kicker">Path</span>
+        <div class="rclone-location" role="group" aria-label="Current path">
+          <div class="rclone-location-main">
+            <span class="rclone-remote-pill">{{ session.get('rclone_remote', '—') }}</span>
+            <span class="rclone-colon" aria-hidden="true">∶</span>
+            <ol class="rclone-breadcrumb" aria-label="Folders">
+              {% if browse_path_parts %}
+                {% for seg in browse_path_parts %}
+                  <li class="rclone-crumb">{{ seg }}</li>
+                {% endfor %}
+              {% else %}
+                <li class="rclone-crumb rclone-crumb--root">root</li>
+              {% endif %}
+            </ol>
+          </div>
+          <form method="post" action="{{ url_for('main.rclone_parent') }}" class="rclone-up-form">
+            <input type="hidden" name="redirect_to" value="{{ rclone_redirect }}">
+            <button type="submit" class="btn btn-secondary rclone-btn-up btn-sm" {% if rclone_at_root %}disabled{% endif %} aria-label="Up one folder" title="Up">↑</button>
+          </form>
+        </div>
+      </div>
+
+      {% if browse.ls_error %}
+        <p class="text-warn">{{ browse.ls_error }}</p>
+      {% else %}
+        <div class="rclone-section rclone-section--pick rclone-section--compact">
+          <div class="rclone-pick-grid">
+            <form class="form rclone-pick" method="post" action="{{ url_for('main.rclone_open_folder') }}">
+              <input type="hidden" name="redirect_to" value="{{ rclone_redirect }}">
+              <label class="label" for="subfolder_query">Folder</label>
+              <div class="field-row">
+                <select class="input" id="subfolder_query" name="subfolder" aria-label="Child folder">
+                  <option value="—">—</option>
+                  {% for d in browse.dirs %}
+                    <option value="{{ d }}">{{ d.split('/')[-1] or d }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm">Enter</button>
+              </div>
+            </form>
+
+            <form class="form rclone-pick" method="post" action="{{ url_for('main.rclone_load_image') }}">
+              <input type="hidden" name="redirect_to" value="{{ rclone_redirect }}">
+              <label class="label" for="image_file_query">File</label>
+              <div class="field-row">
+                <select class="input" id="image_file_query" name="image_file" aria-label="Image file">
+                  <option value="—">—</option>
+                  {% for f in browse.files %}
+                    <option value="{{ f }}">{{ f.split('/')[-1] or f }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Load</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <p class="muted small">No remotes yet. Start the config server, add one under Configs, then refresh remotes.</p>
+    {% endif %}
+  </div>
+</details>
+{% endif %}

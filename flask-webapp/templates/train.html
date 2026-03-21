@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Train · Image retrieval{% endblock %}
+
+{% block initial_toasts %}
+{% if not train_script_exists %}
+{{ [{'category': 'error', 'html': '<p>train_quick.py not found at <span class="mono">' ~ webapp_root|e ~ '/train_quick.py</span>.</p>', 'wide': true}] | tojson }}
+{% else %}
+[]
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<header class="page-hero page-hero--query">
+  <div class="page-hero-text">
+    <p class="eyebrow">Workspace</p>
+    <h1 class="page-title">Train</h1>
+    <p class="page-lead page-lead--tight"><span class="muted">Changing paths does not require retraining.</span></p>
+  </div>
+</header>
+
+<div class="train-page">
+  <div class="train-workspace {% if not train_script_exists %}train-workspace--no-training{% endif %}">
+  <section class="train-panel train-panel--search" aria-labelledby="train-search-label">
+    <div class="train-panel-head train-panel-head--toolbar">
+      <span id="train-search-label" class="train-panel-title">Search &amp; index</span>
+      <div class="train-panel-head-actions">
+        <button type="submit" form="train-settings-form" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+    <form id="train-settings-form" class="form train-form" method="post" action="{{ url_for('main.settings') }}">
+      <input type="hidden" name="redirect_to" value="train">
+      <div class="train-path-grid">
+        <div class="field">
+          <label class="label" for="faiss_path_train">FAISS index</label>
+          <input class="input" id="faiss_path_train" type="text" name="faiss_path" value="{{ session.get('faiss_path', '') }}" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="label" for="features_path_train">Features JSON</label>
+          <input class="input" id="features_path_train" type="text" name="features_path" value="{{ session.get('features_path', '') }}" autocomplete="off">
+        </div>
+      </div>
+      <div class="train-options-row">
+        <div class="train-options-main">
+          <div class="field field-inline-tight">
+            <label class="label" for="num_results_train">Results</label>
+            <select class="input input--narrow" id="num_results_train" name="num_results">
+              {% for n in range(1, 11) %}
+                <option value="{{ n }}" {% if session.get('num_results', 5) == n %}selected{% endif %}>{{ n }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <label class="check check-train">
+            <input type="checkbox" name="show_categories" {% if session.get('show_categories') %}checked{% endif %}>
+            Show categories
+          </label>
+        </div>
+      </div>
+    </form>
+    <div class="train-strip-meta">
+      {% if index_count is not none %}
+        <span class="pill pill-info">{{ index_count }} indexed</span>
+      {% endif %}
+      <span class="pill pill-muted mono">{{ device }}</span>
+    </div>
+  </section>
+
+  {% if train_script_exists %}
+  <section class="train-panel train-panel--run" aria-labelledby="train-run-label">
+    <div class="train-panel-head train-panel-head--toolbar">
+      <span id="train-run-label" class="train-panel-title">Training</span>
+      <div class="train-panel-head-actions">
+        <button type="button" class="btn btn-primary" id="btn-start">Start</button>
+      </div>
+    </div>
+    <div class="train-card">
+      <div class="train-params" id="train-params">
+        <div class="field train-field">
+          <label class="label" for="train-epochs">Epochs</label>
+          <input class="input" type="number" id="train-epochs" name="epochs" min="1" max="500" value="1" required>
+        </div>
+        <div class="field train-field">
+          <label class="label" for="train-batch">Batch</label>
+          <input class="input" type="number" id="train-batch" name="batch_size" min="1" max="512" value="64" required>
+        </div>
+        <div class="field train-field">
+          <label class="label" for="train-max-samples">Max samples</label>
+          <input class="input" type="number" id="train-max-samples" name="max_train_samples" min="0" max="2000000" value="4000" required>
+        </div>
+      </div>
+      <p class="train-cmd-hint train-cmd-preview mono" id="train-cmd-preview">python train_quick.py --epochs 1 --batch-size 64 --max-train-samples 4000</p>
+      <p class="train-cwd muted small"><span class="mono">{{ webapp_root }}</span></p>
+
+      <div class="train-epoch-panel" id="epoch-panel" hidden>
+        <div class="train-epoch-track">
+          <div class="train-epoch-fill" id="epoch-fill" style="width: 0%"></div>
+        </div>
+        <div class="train-epoch-meta">
+          <span id="epoch-label">Epoch — / —</span>
+          <span id="step-label" class="muted small"></span>
+        </div>
+      </div>
+
+      <div class="train-actions">
+        <span class="train-status muted small" id="train-status"></span>
+      </div>
+
+      <div class="train-download-row" id="train-download-row" {% if not weights_exists %}hidden{% endif %}>
+        <a class="btn btn-secondary" id="train-download-static" href="{{ download_weights_url }}" download>Download model.pth</a>
+      </div>
+      <div class="train-download-row train-download-success" id="train-download-success" hidden>
+        <a class="btn btn-primary" id="train-download-after" href="#">Download new weights</a>
+      </div>
+    </div>
+
+    <div class="train-log-wrap">
+      <div class="train-log-head">Log</div>
+      <pre class="train-log mono" id="train-log" aria-live="polite"></pre>
+    </div>
+  </section>
+  {% endif %}
+  </div>
+
+  {% if session.get('show_categories') and categories %}
+  <details class="train-cats-details">
+    <summary class="train-cats-summary">Categories ({{ categories|length }})</summary>
+    <ul class="category-chips train-cats-list">
+      {% for c in categories %}
+        <li>{{ c }}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var btn = document.getElementById('btn-start');
+  var logEl = document.getElementById('train-log');
+  var statusEl = document.getElementById('train-status');
+  var panel = document.getElementById('epoch-panel');
+  var fill = document.getElementById('epoch-fill');
+  var epochLabel = document.getElementById('epoch-label');
+  var stepLabel = document.getElementById('step-label');
+  var ep = document.getElementById('train-epochs');
+  var bat = document.getElementById('train-batch');
+  var mx = document.getElementById('train-max-samples');
+  var cmdPrev = document.getElementById('train-cmd-preview');
+  var dlSuccess = document.getElementById('train-download-success');
+  var dlAfter = document.getElementById('train-download-after');
+  var streamBase = {{ url_for('main.train_stream') | tojson }};
+  if (!btn || !logEl) return;
+
+  function updateCmdPreview() {
+    if (!cmdPrev || !ep || !bat || !mx) return;
+    cmdPrev.textContent =
+      'python train_quick.py --epochs ' + ep.value +
+      ' --batch-size ' + bat.value +
+      ' --max-train-samples ' + mx.value;
+  }
+  [ep, bat, mx].forEach(function (el) {
+    if (el) el.addEventListener('input', updateCmdPreview);
+  });
+  updateCmdPreview();
+
+  var es = null;
+
+  function appendLine(text) {
+    logEl.textContent += text + '\n';
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  var epochState = { cur: 0, tot: 1, step: 0, stepTot: 0 };
+
+  function refreshBar() {
+    var e = epochState.tot;
+    if (e < 1) return;
+    panel.hidden = false;
+    var frac = (epochState.cur - 1) / e;
+    if (epochState.stepTot > 0) {
+      frac += (epochState.step / epochState.stepTot) / e;
+    }
+    var pct = Math.min(100, Math.round(frac * 100));
+    fill.style.width = pct + '%';
+    epochLabel.textContent = 'Epoch ' + epochState.cur + ' / ' + epochState.tot;
+    if (epochState.stepTot > 0) {
+      stepLabel.textContent = 'step ' + epochState.step + ' / ' + epochState.stepTot;
+    } else {
+      stepLabel.textContent = '';
+    }
+  }
+
+  function parseEpochLine(line) {
+    if (line.indexOf('starting') !== -1) {
+      epochState.step = 0;
+      epochState.stepTot = 0;
+    }
+    var m = line.match(/Epoch\s+(\d+)\/(\d+)/);
+    if (!m) return;
+    epochState.cur = parseInt(m[1], 10);
+    epochState.tot = parseInt(m[2], 10);
+    refreshBar();
+  }
+
+  function parseStepLine(line) {
+    var m = line.match(/step\s+(\d+)\/(\d+)/i);
+    if (!m) return;
+    epochState.step = parseInt(m[1], 10);
+    epochState.stepTot = parseInt(m[2], 10);
+    refreshBar();
+  }
+
+  btn.addEventListener('click', function () {
+    if (es) return;
+    if (!ep || !bat || !mx) return;
+    var params = new URLSearchParams({
+      epochs: String(ep.value),
+      batch_size: String(bat.value),
+      max_train_samples: String(mx.value)
+    });
+    logEl.textContent = '';
+    statusEl.textContent = '';
+    if (dlSuccess) dlSuccess.hidden = true;
+    panel.hidden = true;
+    fill.style.width = '0%';
+    epochLabel.textContent = 'Epoch — / —';
+    stepLabel.textContent = '';
+    epochState = { cur: 0, tot: 1, step: 0, stepTot: 0 };
+    btn.disabled = true;
+
+    es = new EventSource(streamBase + '?' + params.toString());
+
+    es.onmessage = function (ev) {
+      try {
+        var d = JSON.parse(ev.data);
+        if (d.error) {
+          appendLine('Error: ' + d.error);
+          statusEl.textContent = 'Failed';
+          es.close();
+          es = null;
+          btn.disabled = false;
+          return;
+        }
+        if (d.line !== undefined) {
+          appendLine(d.line);
+          parseEpochLine(d.line);
+          parseStepLine(d.line);
+        }
+        if (d.done) {
+          statusEl.textContent = d.returncode === 0 ? 'Finished' : 'Exited (' + d.returncode + ')';
+          if (d.returncode === 0 && d.weights_download) {
+            dlAfter.href = d.weights_download;
+            dlAfter.setAttribute('download', '');
+            dlSuccess.hidden = false;
+            var staticRow = document.getElementById('train-download-row');
+            if (staticRow) staticRow.hidden = false;
+          }
+          es.close();
+          es = null;
+          btn.disabled = false;
+        }
+      } catch (e) {
+        appendLine(String(e));
+      }
+    };
+
+    es.onerror = function () {
+      if (es) {
+        appendLine('(stream closed)');
+        es.close();
+        es = null;
+      }
+      btn.disabled = false;
+      if (!statusEl.textContent) statusEl.textContent = 'Disconnected';
+    };
+  });
+})();
+</script>
+{% endblock %}
