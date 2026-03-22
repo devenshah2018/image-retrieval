@@ -6,4 +6,8 @@ set -euo pipefail
 export KMP_DUPLICATE_LIB_OK=TRUE
 
 cd "$(dirname "$0")"
-streamlit run app.py
+# Prefer the active conda env's python when CONDA_PREFIX is set (avoids pyenv winning on PATH).
+if [ -n "${CONDA_PREFIX:-}" ] && [ -x "$CONDA_PREFIX/bin/python" ]; then
+  exec "$CONDA_PREFIX/bin/python" run_flask.py "$@"
+fi
+exec python run_flask.py "$@"

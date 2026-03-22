@@ -5,12 +5,10 @@ import json
 import os
 import subprocess
 import sys
-import threading
 from typing import Iterator, Optional
 
 from .paths import get_webapp_root
-
-_lock = threading.Lock()
+from .runner_lock import JOB_LOCK
 
 
 def _sse_data(obj: dict) -> str:
@@ -31,7 +29,7 @@ def stream_train(
         yield _sse_data({"error": f"train_quick.py not found: {script}"})
         return
 
-    if not _lock.acquire(blocking=False):
+    if not JOB_LOCK.acquire(blocking=False):
         yield _sse_data(
             {
                 "error": "Training is already running. Wait for it to finish or open one tab only.",
@@ -78,4 +76,4 @@ def stream_train(
             proc.kill()
         yield _sse_data({"done": True, "returncode": -1})
     finally:
-        _lock.release()
+        JOB_LOCK.release()

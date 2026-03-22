@@ -10,9 +10,6 @@ dependencies:
   - numpy
   - pillow
   - tqdm
-  - streamlit
   - flask
   - faiss-cpu
   - pip
-  - pip:
-    - faiss-cpu

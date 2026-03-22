@@ -26,8 +26,14 @@ from werkzeug.utils import secure_filename
 
 from . import dataset_explorer as de
 from . import rcd_registry
+from . import pipeline_runner
+from . import precompute_runner
 from . import train_runner
-from .paths import get_webapp_root
+from .paths import (
+    default_faiss_index_path,
+    default_features_paths_json,
+    get_webapp_root,
+)
 from .rclone_import import get_rclone_utils
 from .results import build_result_rows, guess_mime, resolve_result_file_path
 
@@ -75,9 +81,8 @@ def _device_str() -> str:
         return "cpu"
 
 
-_DATA = os.path.join(str(get_webapp_root()), "data")
-DEFAULT_FAISS_INDEX_PATH = os.path.join(_DATA, "faiss_index.bin")
-DEFAULT_FEATURES_PATHS_FILE = os.path.join(_DATA, "features_paths.json")
+DEFAULT_FAISS_INDEX_PATH = default_faiss_index_path()
+DEFAULT_FEATURES_PATHS_FILE = default_features_paths_json()
 
 
 def _weights_file_path():
@@ -97,6 +102,28 @@ def _parse_train_stream_params():
     batch_size = max(1, min(512, batch_size))
     max_train_samples = max(0, min(2_000_000, max_train_samples))
     return epochs, batch_size, max_train_samples
+
+
+def _parse_precompute_stream_params():
+    """Query string ?num_per_class= for /train/precompute/stream."""
+    try:
+        num_per_class = int(request.args.get("num_per_class", 20))
+    except (TypeError, ValueError):
+        return None
+    num_per_class = max(1, min(500, num_per_class))
+    return num_per_class
+
+
+def _parse_pipeline_stream_params():
+    """Query string for /train/pipeline/stream: train + precompute args."""
+    parsed = _parse_train_stream_params()
+    if parsed is None:
+        return None
+    pc = _parse_precompute_stream_params()
+    if pc is None:
+        return None
+    epochs, batch_size, max_train_samples = parsed
+    return epochs, batch_size, max_train_samples, pc
 
 
 def _sid() -> str:
@@ -230,9 +257,9 @@ def _index_count():
 
 
 def _redirect_after_settings():
-    """POST /settings may include redirect_to=index; default Train."""
+    """POST /settings may include redirect_to=index|query; default Train."""
     dest = (request.form.get("redirect_to") or "").strip().lower()
-    if dest == "index":
+    if dest in ("index", "query"):
         return redirect(url_for("main.index"))
     return redirect(url_for("main.train_page"))
 
@@ -276,14 +303,20 @@ def train_page():
     categories = _categories_for_sidebar()
     webapp = get_webapp_root()
     train_script = webapp / "train_quick.py"
+    precompute_script = webapp / "precompute.sh"
     wpath = _weights_file_path()
+    tr = train_script.is_file()
+    pc = precompute_script.is_file()
     return render_template(
         "train.html",
         page_id="train",
-        train_script_exists=train_script.is_file(),
+        train_script_exists=tr,
+        precompute_exists=pc,
+        pipeline_ready=tr and pc,
         webapp_root=str(webapp),
         weights_exists=wpath.is_file(),
         download_weights_url=url_for("main.download_weights"),
+        pipeline_stream_url=url_for("main.train_pipeline_stream"),
         device=_device_str(),
         index_count=_index_count(),
         categories=categories,
@@ -384,6 +417,81 @@ def train_stream():
             epochs,
             batch_size,
             max_train_samples,
+            weights_download_url=weights_url,
+        ):
+            yield chunk
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@bp.route("/train/precompute/stream", methods=["GET"])
+def precompute_stream():
+    """Server-Sent Events: lines from webapp/precompute.sh subprocess."""
+    _defaults()
+    _sid()
+    parsed = _parse_precompute_stream_params()
+    if parsed is None:
+
+        def bad():
+            yield f"data: {json.dumps({'error': 'Invalid num_per_class'})}\n\n"
+
+        return Response(
+            stream_with_context(bad()),
+            mimetype="text/event-stream",
+            headers={"Cache-Control": "no-cache"},
+        )
+
+    num_per_class = parsed
+
+    def generate():
+        for chunk in precompute_runner.stream_precompute(num_per_class):
+            yield chunk
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@bp.route("/train/pipeline/stream", methods=["GET"])
+def train_pipeline_stream():
+    """SSE: train_quick.py then precompute.sh in one job."""
+    _defaults()
+    _sid()
+    parsed = _parse_pipeline_stream_params()
+    if parsed is None:
+
+        def bad():
+            yield f"data: {json.dumps({'error': 'Invalid pipeline parameters'})}\n\n"
+
+        return Response(
+            stream_with_context(bad()),
+            mimetype="text/event-stream",
+            headers={"Cache-Control": "no-cache"},
+        )
+
+    epochs, batch_size, max_train_samples, num_per_class = parsed
+    weights_url = url_for("main.download_weights")
+
+    def generate():
+        for chunk in pipeline_runner.stream_train_then_precompute(
+            epochs,
+            batch_size,
+            max_train_samples,
+            num_per_class,
             weights_download_url=weights_url,
         ):
             yield chunk

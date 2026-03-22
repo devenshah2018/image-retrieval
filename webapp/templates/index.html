@@ -6,8 +6,30 @@
   <div class="page-hero-text">
     <p class="eyebrow">Search</p>
     <h1 class="page-title">Query</h1>
+    <p class="page-lead page-lead--tight {% if search_results %}page-lead--results-compact{% endif %}">Upload a source image, then search. Build the FAISS index on Train; set result count and categories below.</p>
   </div>
 </header>
+
+<form class="query-settings-form" method="post" action="{{ url_for('main.settings') }}">
+  <input type="hidden" name="redirect_to" value="query">
+  <input type="hidden" name="faiss_path" value="{{ session.get('faiss_path', '') }}">
+  <input type="hidden" name="features_path" value="{{ session.get('features_path', '') }}">
+  <div class="query-settings-inner">
+    <div class="field field-inline-tight query-settings-field">
+      <label class="label" for="num_results_query">Results per search</label>
+      <select class="input input--narrow" id="num_results_query" name="num_results">
+        {% for n in range(1, 11) %}
+          <option value="{{ n }}" {% if session.get('num_results', 5) == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <label class="check check-query-settings">
+      <input type="checkbox" name="show_categories" {% if session.get('show_categories') %}checked{% endif %}>
+      Show categories sphere on Train
+    </label>
+    <button type="submit" class="btn btn-secondary query-settings-save">Save</button>
+  </div>
+</form>
 
 <div class="query-workspace {% if search_results %}query-workspace--has-results{% endif %}">
   <div class="query-ingress">

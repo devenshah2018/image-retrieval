@@ -1,0 +1,3 @@
+# Pip extras (conda env already has PyTorch, faiss, etc.); use if Flask is missing:
+#   pip install -r requirements.txt
+flask>=3.0

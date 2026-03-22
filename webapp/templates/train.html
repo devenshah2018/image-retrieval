@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}Train · Image retrieval{% endblock %}
+
+{% block initial_toasts %}
+{% if not train_script_exists %}
+{{ [{'category': 'error', 'html': '<p>train_quick.py not found at <span class="mono">' ~ webapp_root|e ~ '/train_quick.py</span>.</p>', 'wide': true}] | tojson }}
+{% elif not precompute_exists %}
+{{ [{'category': 'warning', 'html': '<p><code class="mono">precompute.sh</code> not found under <span class="mono">' ~ webapp_root|e ~ '</span>. The train → index pipeline needs both scripts.</p>', 'wide': true}] | tojson }}
+{% else %}
+[]
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<header class="page-hero page-hero--train">
+  <p class="eyebrow">Workspace</p>
+  <div class="page-hero-train-row">
+    <div class="page-hero-text page-hero-text--train">
+      <h1 class="page-title">Train</h1>
+      <p class="page-lead page-lead--tight"><span class="muted">Runs <span class="mono">train_quick.py</span> then <span class="mono">precompute.sh</span> in one step. Outputs <span class="mono">weights/model.pth</span>, <span class="mono">data/faiss_index.bin</span>, and <span class="mono">data/features_paths.json</span>.</span></p>
+    </div>
+    {% if session.get('show_categories') and categories %}
+    <div class="page-hero-globe train-globe-block">
+      <div class="train-sphere-viewport" id="train-sphere-viewport" aria-label="Categories">
+        <div class="train-sphere-inner" id="train-sphere-inner" role="list"></div>
+      </div>
+      <p class="train-sphere-hint">{{ categories|length }} categories</p>
+      <script type="application/json" id="train-sphere-data">{{ categories|tojson }}</script>
+    </div>
+    {% endif %}
+  </div>
+</header>
+
+<div class="train-page">
+  <div class="train-workspace train-workspace--pipeline">
+  <section class="train-panel train-panel--settings" aria-labelledby="train-pipeline-label">
+    <div class="train-panel-head train-panel-head--toolbar">
+      <span id="train-pipeline-label" class="train-panel-title">Train &amp; build index</span>
+    </div>
+    <p class="train-index-paths muted small">Search uses session paths pointing at <span class="mono">data/</span>; they update automatically after a successful run.</p>
+
+    {% if pipeline_ready %}
+    <div class="train-card">
+      <div class="train-params train-params--pipeline" id="pipeline-params">
+        <div class="field train-field">
+          <label class="label" for="train-epochs">Epochs</label>
+          <input class="input" type="number" id="train-epochs" name="epochs" min="1" max="500" value="1" required>
+        </div>
+        <div class="field train-field">
+          <label class="label" for="train-batch">Batch</label>
+          <input class="input" type="number" id="train-batch" name="batch_size" min="1" max="512" value="64" required>
+        </div>
+        <div class="field train-field">
+          <label class="label" for="train-max-samples">Max samples</label>
+          <input class="input" type="number" id="train-max-samples" name="max_train_samples" min="0" max="2000000" value="4000" required>
+        </div>
+        <div class="field train-field">
+          <label class="label" for="pipeline-num-per-class">Num per class</label>
+          <input class="input" type="number" id="pipeline-num-per-class" name="num_per_class" min="1" max="500" value="20" required>
+        </div>
+      </div>
+      <p class="train-cmd-preview mono" id="pipeline-cmd-preview"></p>
+      <div class="train-epoch-panel" id="epoch-panel" hidden>
+        <div class="train-epoch-track">
+          <div class="train-epoch-fill" id="epoch-fill" style="width: 0%"></div>
+        </div>
+        <div class="train-epoch-meta">
+          <span id="epoch-label">Epoch — / —</span>
+          <span id="step-label" class="muted small"></span>
+        </div>
+      </div>
+      <div class="train-actions">
+        <button type="button" class="btn btn-primary" id="btn-run-pipeline">Run</button>
+        <span class="train-status muted small" id="pipeline-status"></span>
+      </div>
+      <div class="train-download-row" id="train-download-row" {% if not weights_exists %}hidden{% endif %}>
+        <a class="btn btn-secondary" id="train-download-static" href="{{ download_weights_url }}" download>Download model.pth</a>
+      </div>
+      <div class="train-download-row train-download-success" id="train-download-success" hidden>
+        <a class="btn btn-primary" id="train-download-after" href="#">Download new weights</a>
+      </div>
+    </div>
+    {% else %}
+    <p class="muted small">Place <span class="mono">train_quick.py</span> and <span class="mono">precompute.sh</span> in <span class="mono">{{ webapp_root }}</span> to run the pipeline from the UI.</p>
+    {% endif %}
+
+    <div class="train-strip-meta">
+      {% if index_count is not none %}
+        <span class="pill pill-info">{{ index_count }} indexed</span>
+      {% endif %}
+      <span class="pill pill-muted mono">{{ device }}</span>
+    </div>
+  </section>
+
+  {% if pipeline_ready %}
+  <aside class="train-right-col" aria-label="Log">
+    <div class="train-log-wrap train-log-wrap--shared">
+      <div class="train-log-head">Log</div>
+      <pre class="train-log mono" id="train-log" aria-live="polite"></pre>
+    </div>
+  </aside>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if session.get('show_categories') and categories %}
+<script src="{{ url_for('static', filename='js/train-sphere.js') }}" defer></script>
+{% endif %}
+<script>
+(function () {
+  var pipelineBase = {{ pipeline_stream_url | tojson }};
+
+  var logEl = document.getElementById('train-log');
+  function appendLogLine(text) {
+    if (!logEl) return;
+    logEl.textContent += text + '\n';
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  var btn = document.getElementById('btn-run-pipeline');
+  var statusEl = document.getElementById('pipeline-status');
+  var panel = document.getElementById('epoch-panel');
+  var fill = document.getElementById('epoch-fill');
+  var epochLabel = document.getElementById('epoch-label');
+  var stepLabel = document.getElementById('step-label');
+  var ep = document.getElementById('train-epochs');
+  var bat = document.getElementById('train-batch');
+  var mx = document.getElementById('train-max-samples');
+  var npc = document.getElementById('pipeline-num-per-class');
+  var cmdPrev = document.getElementById('pipeline-cmd-preview');
+  var dlSuccess = document.getElementById('train-download-success');
+  var dlAfter = document.getElementById('train-download-after');
+
+  var es = null;
+
+  function updateCmdPreview() {
+    if (!cmdPrev || !ep || !bat || !mx || !npc) return;
+    cmdPrev.textContent =
+      'python train_quick.py --epochs ' + ep.value +
+      ' --batch-size ' + bat.value +
+      ' --max-train-samples ' + mx.value +
+      '\n./precompute.sh --num-per-class ' + npc.value;
+  }
+  [ep, bat, mx, npc].forEach(function (el) {
+    if (el) el.addEventListener('input', updateCmdPreview);
+  });
+  updateCmdPreview();
+
+  var epochState = { cur: 0, tot: 1, step: 0, stepTot: 0 };
+
+  function refreshBar() {
+    var e = epochState.tot;
+    if (e < 1) return;
+    panel.hidden = false;
+    var frac = (epochState.cur - 1) / e;
+    if (epochState.stepTot > 0) {
+      frac += (epochState.step / epochState.stepTot) / e;
+    }
+    var pct = Math.min(100, Math.round(frac * 100));
+    fill.style.width = pct + '%';
+    epochLabel.textContent = 'Epoch ' + epochState.cur + ' / ' + epochState.tot;
+    if (epochState.stepTot > 0) {
+      stepLabel.textContent = 'step ' + epochState.step + ' / ' + epochState.stepTot;
+    } else {
+      stepLabel.textContent = '';
+    }
+  }
+
+  function parseEpochLine(line) {
+    if (line.indexOf('starting') !== -1) {
+      epochState.step = 0;
+      epochState.stepTot = 0;
+    }
+    var m = line.match(/Epoch\s+(\d+)\/(\d+)/);
+    if (!m) return;
+    epochState.cur = parseInt(m[1], 10);
+    epochState.tot = parseInt(m[2], 10);
+    refreshBar();
+  }
+
+  function parseStepLine(line) {
+    var m = line.match(/step\s+(\d+)\/(\d+)/i);
+    if (!m) return;
+    epochState.step = parseInt(m[1], 10);
+    epochState.stepTot = parseInt(m[2], 10);
+    refreshBar();
+  }
+
+  if (btn && logEl && ep && bat && mx && npc) {
+    btn.addEventListener('click', function () {
+      if (es) return;
+      if (logEl) logEl.textContent = '';
+      statusEl.textContent = '';
+      if (dlSuccess) dlSuccess.hidden = true;
+      panel.hidden = true;
+      fill.style.width = '0%';
+      epochLabel.textContent = 'Epoch — / —';
+      stepLabel.textContent = '';
+      epochState = { cur: 0, tot: 1, step: 0, stepTot: 0 };
+      btn.disabled = true;
+
+      var params = new URLSearchParams({
+        epochs: String(ep.value),
+        batch_size: String(bat.value),
+        max_train_samples: String(mx.value),
+        num_per_class: String(npc.value)
+      });
+      es = new EventSource(pipelineBase + '?' + params.toString());
+
+      es.onmessage = function (ev) {
+        try {
+          var d = JSON.parse(ev.data);
+          if (d.error) {
+            appendLogLine('Error: ' + d.error);
+            statusEl.textContent = 'Failed';
+            es.close();
+            es = null;
+            btn.disabled = false;
+            return;
+          }
+          if (d.line !== undefined) {
+            appendLogLine(d.line);
+            parseEpochLine(d.line);
+            parseStepLine(d.line);
+          }
+          if (d.done) {
+            if (d.phase === 'train') {
+              statusEl.textContent = 'Training failed (exit ' + d.returncode + ')';
+            } else if (d.phase === 'precompute') {
+              statusEl.textContent = 'Index build failed (exit ' + d.returncode + ')';
+            } else if (d.phase === 'error') {
+              statusEl.textContent = 'Failed';
+            } else if (d.pipeline_complete && d.returncode === 0) {
+              statusEl.textContent = 'Finished';
+              if (d.weights_download) {
+                dlAfter.href = d.weights_download;
+                dlAfter.setAttribute('download', '');
+                dlSuccess.hidden = false;
+                var staticRow = document.getElementById('train-download-row');
+                if (staticRow) staticRow.hidden = false;
+              }
+              setTimeout(function () {
+                window.location.reload();
+              }, 600);
+            } else {
+              statusEl.textContent = 'Exited (' + d.returncode + ')';
+            }
+            es.close();
+            es = null;
+            btn.disabled = false;
+          }
+        } catch (e) {
+          appendLogLine(String(e));
+        }
+      };
+
+      es.onerror = function () {
+        if (es) {
+          appendLogLine('(stream closed)');
+          es.close();
+          es = null;
+        }
+        btn.disabled = false;
+        if (!statusEl.textContent) statusEl.textContent = 'Disconnected';
+      };
+    });
+  }
+})();
+</script>
+{% endblock %}
