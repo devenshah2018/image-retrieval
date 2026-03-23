@@ -12,22 +12,10 @@
 {% endblock %}
 
 {% block content %}
-<header class="page-hero page-hero--train">
+<header class="page-hero page-hero--train page-hero--train-compact">
   <p class="eyebrow">Workspace</p>
-  <div class="page-hero-train-row">
-    <div class="page-hero-text page-hero-text--train">
-      <h1 class="page-title">Train</h1>
-      <p class="page-lead page-lead--tight"><span class="muted">Runs <span class="mono">train_quick.py</span> then <span class="mono">precompute.sh</span> in one step. Outputs <span class="mono">weights/model.pth</span>, <span class="mono">data/faiss_index.bin</span>, and <span class="mono">data/features_paths.json</span>.</span></p>
-    </div>
-    {% if session.get('show_categories') and categories %}
-    <div class="page-hero-globe train-globe-block">
-      <div class="train-sphere-viewport" id="train-sphere-viewport" aria-label="Categories">
-        <div class="train-sphere-inner" id="train-sphere-inner" role="list"></div>
-      </div>
-      <p class="train-sphere-hint">{{ categories|length }} categories</p>
-      <script type="application/json" id="train-sphere-data">{{ categories|tojson }}</script>
-    </div>
-    {% endif %}
+  <div class="page-hero-text page-hero-text--train-heading">
+    <h1 class="page-title">Train</h1>
   </div>
 </header>
 
@@ -37,7 +25,6 @@
     <div class="train-panel-head train-panel-head--toolbar">
       <span id="train-pipeline-label" class="train-panel-title">Train &amp; build index</span>
     </div>
-    <p class="train-index-paths muted small">Search uses session paths pointing at <span class="mono">data/</span>; they update automatically after a successful run.</p>
 
     {% if pipeline_ready %}
     <div class="train-card">
@@ -105,9 +92,6 @@
 {% endblock %}
 
 {% block scripts %}
-{% if session.get('show_categories') and categories %}
-<script src="{{ url_for('static', filename='js/train-sphere.js') }}" defer></script>
-{% endif %}
 <script>
 (function () {
   var pipelineBase = {{ pipeline_stream_url | tojson }};

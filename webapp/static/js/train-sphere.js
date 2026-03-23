@@ -15,8 +15,11 @@
   }
   if (!categories.length) return;
 
-  /* Radius scales with √N so labels don’t crowd; nudged down for slightly tighter spacing. */
-  var R = 90 + Math.sqrt(categories.length) * 8.2;
+  /* Radius scales with √N; tighter in the process strip (shorter viewport). */
+  var compact = viewport.classList.contains("train-sphere-viewport--process");
+  var R = compact
+    ? 72 + Math.sqrt(categories.length) * 6.2
+    : 90 + Math.sqrt(categories.length) * 8.2;
   var golden = Math.PI * (3 - Math.sqrt(5));
 
   function fibonacciSphere(n) {

@@ -6,41 +6,28 @@
   <div class="page-hero-text">
     <p class="eyebrow">Search</p>
     <h1 class="page-title">Query</h1>
-    <p class="page-lead page-lead--tight {% if search_results %}page-lead--results-compact{% endif %}">Upload a source image, then search. Build the FAISS index on Train; set result count and categories below.</p>
+    {% if not search_results %}
+    <form class="query-hero-settings" method="post" action="{{ url_for('main.settings') }}">
+      <input type="hidden" name="redirect_to" value="query">
+      <input type="hidden" name="faiss_path" value="{{ session.get('faiss_path', '') }}">
+      <input type="hidden" name="features_path" value="{{ session.get('features_path', '') }}">
+      <span class="query-hero-settings__cluster">
+        <label class="query-hero-settings__inline" for="num_results_query">
+          <span class="query-hero-settings__hint">Results</span>
+          <select class="input query-hero-select" id="num_results_query" name="num_results" onchange="this.form.submit()">
+            {% for n in range(1, 11) %}
+              <option value="{{ n }}" {% if session.get('num_results', 5) == n %}selected{% endif %}>{{ n }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </span>
+    </form>
+    {% endif %}
   </div>
 </header>
 
-<form class="query-settings-form" method="post" action="{{ url_for('main.settings') }}">
-  <input type="hidden" name="redirect_to" value="query">
-  <input type="hidden" name="faiss_path" value="{{ session.get('faiss_path', '') }}">
-  <input type="hidden" name="features_path" value="{{ session.get('features_path', '') }}">
-  <div class="query-settings-inner">
-    <div class="field field-inline-tight query-settings-field">
-      <label class="label" for="num_results_query">Results per search</label>
-      <select class="input input--narrow" id="num_results_query" name="num_results">
-        {% for n in range(1, 11) %}
-          <option value="{{ n }}" {% if session.get('num_results', 5) == n %}selected{% endif %}>{{ n }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <label class="check check-query-settings">
-      <input type="checkbox" name="show_categories" {% if session.get('show_categories') %}checked{% endif %}>
-      Show categories sphere on Train
-    </label>
-    <button type="submit" class="btn btn-secondary query-settings-save">Save</button>
-  </div>
-</form>
-
 <div class="query-workspace {% if search_results %}query-workspace--has-results{% endif %}">
   <div class="query-ingress">
-    {% if search_results %}
-    <div class="query-rail-header">
-      <form method="post" action="{{ url_for('main.new_query') }}">
-        <button type="submit" class="btn btn-primary btn-block">New query</button>
-      </form>
-    </div>
-    {% endif %}
-
     <section class="query-panel query-panel--preview {% if search_results %}query-panel--preview-rail{% endif %}">
       <div class="query-panel-accent query-panel-accent--preview" aria-hidden="true"></div>
       <div class="query-panel-head">
@@ -72,6 +59,13 @@
           {% endif %}
         </div>
       </div>
+      {% if search_results %}
+      <div class="query-preview-footer">
+        <form method="post" action="{{ url_for('main.new_query') }}">
+          <button type="submit" class="btn btn-primary btn-block query-new-query-btn">New query</button>
+        </form>
+      </div>
+      {% endif %}
     </section>
 
     {% if not search_results %}
@@ -91,11 +85,10 @@
           <label class="upload-zone" for="file-input">
             <input class="upload-input" id="file-input" type="file" name="file" accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff">
             <span class="upload-zone-inner">
-              <span class="upload-hint">Drop an image or <strong>browse</strong></span>
+              <span class="upload-hint">Drop an image or <strong>browse</strong> — uploads automatically</span>
               <span class="upload-sub">JPG, PNG, WebP, GIF, BMP, TIFF</span>
             </span>
           </label>
-          <button type="submit" class="btn btn-secondary btn-upload-submit">Upload</button>
         </form>
         {% include 'partials/rclone_panel.html' %}
         <div class="query-actions">
@@ -143,16 +136,48 @@
 {% block scripts %}
 <script>
 (function () {
+  var form = document.querySelector('.upload-form');
   var input = document.getElementById('file-input');
-  var zone = document.querySelector('.upload-hint');
-  if (!input || !zone) return;
-  input.addEventListener('change', function () {
-    var f = input.files && input.files[0];
-    if (f) {
-      zone.textContent = 'Selected: ' + f.name;
+  var zone = document.querySelector('.upload-zone');
+  var hint = document.querySelector('.upload-hint');
+  if (!form || !input || !zone) return;
+
+  function setHintSelected(name) {
+    if (!hint) return;
+    if (name) {
+      hint.textContent = 'Selected: ' + name + ' — uploading…';
     } else {
-      zone.innerHTML = 'Drop an image or <strong>browse</strong>';
+      hint.innerHTML = 'Drop an image or <strong>browse</strong> — uploads automatically';
     }
+  }
+
+  function submitIfFile() {
+    if (input.files && input.files.length) {
+      var f = input.files[0];
+      setHintSelected(f.name);
+      form.requestSubmit();
+    }
+  }
+
+  input.addEventListener('change', submitIfFile);
+
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    zone.addEventListener(ev, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    });
+  });
+
+  zone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (!files || !files.length) return;
+    var dt = new DataTransfer();
+    dt.items.add(files[0]);
+    input.files = dt.files;
+    submitIfFile();
   });
 })();
 </script>

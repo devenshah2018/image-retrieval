@@ -1,0 +1,172 @@
+{# Pipeline panels — SVG diagrams + data-arch-piece for train-process.js #}
+{% macro augment_panel() %}
+<div class="train-arch-viz train-arch-viz--augment train-arch-viz--html js-arch-viz" data-viz="augment" aria-hidden="true">
+  <div class="train-arch-panel train-arch-panel--train">
+    <p class="train-arch-panel__kicker">train_tf · <span class="mono">train_quick.py</span></p>
+    <div class="train-arch-index-viz train-arch-index-viz--embed2d train-arch-pipeline-viz" aria-hidden="true">
+      <svg class="train-arch-index-viz__svg train-arch-pipeline-viz__svg" viewBox="0 0 360 104" xmlns="http://www.w3.org/2000/svg" focusable="false">
+        <defs>
+          <pattern id="train-arch-aug-grid" width="14" height="14" patternUnits="userSpaceOnUse">
+            <path d="M14 0H0V14" fill="none" stroke="rgba(28,25,23,0.07)" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="360" height="104" rx="6" fill="#f5f5f4" stroke="var(--line-strong)" stroke-width="1"/>
+        <rect x="1" y="1" width="358" height="102" rx="5" fill="url(#train-arch-aug-grid)" opacity="0.9"/>
+        <text x="10" y="17" class="train-arch-index-viz__svg-cap train-arch-pipeline-viz__svg-cap">spatial · color · tensor</text>
+        <g aria-hidden="true">
+          <rect x="10" y="32" width="26" height="26" rx="3" class="train-arch-pipeline-viz__thumb"/>
+          <line x1="14" y1="36" x2="32" y2="54" stroke="rgba(28,25,23,0.12)" stroke-width="1.25"/>
+        </g>
+        <path d="M40 45h8" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node" data-arch-piece="resize">
+          <rect x="50" y="34" width="40" height="22" rx="3" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--train"/>
+          <text x="70" y="48.5" text-anchor="middle" class="train-arch-pipeline-viz__svg-box-txt">144²</text>
+        </g>
+        <path d="M92 45h8" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node" data-arch-piece="rrc">
+          <rect x="102" y="34" width="44" height="22" rx="3" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--train"/>
+          <text x="124" y="48.5" text-anchor="middle" class="train-arch-pipeline-viz__svg-box-txt">RRC</text>
+        </g>
+        <path d="M148 45h8" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node" data-arch-piece="geom">
+          <rect x="158" y="34" width="44" height="22" rx="3" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--train"/>
+          <text x="180" y="48.5" text-anchor="middle" class="train-arch-pipeline-viz__svg-box-txt">flip·rot</text>
+        </g>
+        <path d="M204 45h8" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node" data-arch-piece="photo">
+          <rect x="214" y="34" width="52" height="22" rx="3" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--train"/>
+          <text x="240" y="48.5" text-anchor="middle" class="train-arch-pipeline-viz__svg-box-txt">ColorJit</text>
+        </g>
+        <path d="M240 56v6H88v4" class="train-arch-pipeline-viz__flow-arrow train-arch-pipeline-viz__flow-arrow--branch" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node" data-arch-piece="tensor">
+          <rect x="48" y="70" width="76" height="22" rx="3" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--train"/>
+          <text x="86" y="84.5" text-anchor="middle" class="train-arch-pipeline-viz__svg-box-txt">ToTensor</text>
+        </g>
+        <path d="M126 81h8" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node" data-arch-piece="norm">
+          <rect x="136" y="70" width="86" height="22" rx="3" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--train"/>
+          <text x="179" y="84.5" text-anchor="middle" class="train-arch-pipeline-viz__svg-box-txt">ImageNet μσ</text>
+        </g>
+        <path d="M224 81h8" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node" data-arch-piece="erase">
+          <rect x="234" y="70" width="86" height="22" rx="3" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--train"/>
+          <text x="277" y="84.5" text-anchor="middle" class="train-arch-pipeline-viz__svg-box-txt">RandErase</text>
+        </g>
+      </svg>
+    </div>
+    <p class="train-arch-panel__foot">Resize 144² · RRC 128 · L2-normalized batch</p>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro encode_panel() %}
+<div class="train-arch-viz train-arch-viz--encode train-arch-viz--html js-arch-viz" data-viz="encode" aria-hidden="true">
+  <div class="train-arch-panel train-arch-panel--encode">
+    <p class="train-arch-panel__kicker"><span class="mono">ResNetTransferModel</span></p>
+    <div class="train-arch-index-viz train-arch-index-viz--embed2d train-arch-pipeline-viz" aria-hidden="true">
+      <svg class="train-arch-index-viz__svg train-arch-pipeline-viz__svg" viewBox="0 0 360 104" xmlns="http://www.w3.org/2000/svg" focusable="false">
+        <defs>
+          <pattern id="train-arch-enc-grid" width="14" height="14" patternUnits="userSpaceOnUse">
+            <path d="M14 0H0V14" fill="none" stroke="rgba(28,25,23,0.07)" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="360" height="104" rx="6" fill="#f5f5f4" stroke="var(--line-strong)" stroke-width="1"/>
+        <rect x="1" y="1" width="358" height="102" rx="5" fill="url(#train-arch-enc-grid)" opacity="0.9"/>
+        <text x="10" y="17" class="train-arch-index-viz__svg-cap train-arch-pipeline-viz__svg-cap">backbone · head · 128-d L2</text>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node train-arch-pipeline-viz__node--stack" data-arch-piece="resnet">
+          <rect x="12" y="28" width="148" height="56" rx="5" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--encode-dark"/>
+          <text x="24" y="48" class="train-arch-pipeline-viz__svg-title-inv">ResNet18</text>
+          <text x="24" y="62" class="train-arch-pipeline-viz__svg-sub-inv">ImageNet · L3–4 train · 512-d</text>
+        </g>
+        <path d="M162 56h20" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node train-arch-pipeline-viz__node--stack" data-arch-piece="embed">
+          <rect x="184" y="28" width="164" height="56" rx="5" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--encode-light"/>
+          <text x="196" y="48" class="train-arch-pipeline-viz__svg-title">Head</text>
+          <text x="196" y="62" class="train-arch-pipeline-viz__svg-sub">512→128 · BN · ReLU · drop</text>
+          <text x="196" y="74" class="train-arch-pipeline-viz__svg-sub">128→C · cross-entropy</text>
+        </g>
+      </svg>
+    </div>
+    <p class="train-arch-panel__foot train-arch-panel__foot--encode">L2-normalized 128-d → FAISS</p>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro index_panel() %}
+<div class="train-arch-viz train-arch-viz--index train-arch-viz--html js-arch-viz" data-viz="index" aria-hidden="true">
+  <div class="train-arch-panel train-arch-panel--train">
+    <p class="train-arch-panel__kicker">IndexFlatIP · 128-d · <span class="mono">precompute.sh</span></p>
+    <div class="train-arch-index-viz train-arch-index-viz--embed2d train-arch-pipeline-viz" aria-hidden="true">
+      <svg class="train-arch-index-viz__svg train-arch-pipeline-viz__svg" viewBox="0 0 360 104" xmlns="http://www.w3.org/2000/svg" focusable="false">
+        <defs>
+          <pattern id="train-arch-ix-grid" width="14" height="14" patternUnits="userSpaceOnUse">
+            <path d="M14 0H0V14" fill="none" stroke="rgba(28,25,23,0.07)" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="360" height="104" rx="6" fill="#f5f5f4" stroke="var(--line-strong)" stroke-width="1"/>
+        <rect x="1" y="1" width="358" height="102" rx="5" fill="url(#train-arch-ix-grid)" opacity="0.9"/>
+        <text x="10" y="17" class="train-arch-index-viz__svg-cap train-arch-pipeline-viz__svg-cap">2D projection · L2-normalized</text>
+        <g class="train-arch-viz__hit train-arch-index-viz__gallery" data-arch-piece="gallery" aria-hidden="true">
+          <circle cx="32" cy="38" r="2.3"/><circle cx="48" cy="22" r="2"/><circle cx="58" cy="52" r="2.2"/><circle cx="72" cy="30" r="2"/><circle cx="88" cy="44" r="2.1"/><circle cx="102" cy="24" r="2"/><circle cx="118" cy="58" r="2.2"/><circle cx="128" cy="36" r="2"/><circle cx="44" cy="68" r="2"/><circle cx="68" cy="72" r="2.1"/><circle cx="92" cy="78" r="2"/><circle cx="112" cy="88" r="2"/><circle cx="38" cy="86" r="2"/><circle cx="248" cy="28" r="2.1"/><circle cx="268" cy="40" r="2"/><circle cx="288" cy="22" r="2.2"/><circle cx="308" cy="34" r="2"/><circle cx="328" cy="48" r="2.1"/><circle cx="342" cy="66" r="2"/><circle cx="318" cy="78" r="2"/><circle cx="292" cy="88" r="2.1"/><circle cx="262" cy="82" r="2"/><circle cx="232" cy="72" r="2"/><circle cx="218" cy="56" r="2.1"/><circle cx="200" cy="24" r="2"/><circle cx="220" cy="38" r="2"/><circle cx="52" cy="54" r="2"/><circle cx="76" cy="58" r="2"/><circle cx="34" cy="56" r="2"/><circle cx="154" cy="26" r="2"/><circle cx="172" cy="18" r="2"/><circle cx="188" cy="78" r="2"/><circle cx="334" cy="28" r="2"/>
+        </g>
+        <g class="train-arch-index-viz__links" aria-hidden="true">
+          <line x1="184" y1="52" x2="148" y2="38" class="train-arch-index-viz__link"/>
+          <line x1="184" y1="52" x2="212" y2="36" class="train-arch-index-viz__link"/>
+          <line x1="184" y1="52" x2="168" y2="72" class="train-arch-index-viz__link"/>
+          <line x1="184" y1="52" x2="206" y2="66" class="train-arch-index-viz__link"/>
+          <line x1="184" y1="52" x2="152" y2="62" class="train-arch-index-viz__link"/>
+        </g>
+        <g class="train-arch-viz__hit train-arch-index-viz__topk" data-arch-piece="topk" aria-hidden="true">
+          <circle cx="148" cy="38" r="3.8" class="train-arch-index-viz__nb"/><circle cx="212" cy="36" r="3.8" class="train-arch-index-viz__nb"/><circle cx="168" cy="72" r="3.8" class="train-arch-index-viz__nb"/><circle cx="206" cy="66" r="3.8" class="train-arch-index-viz__nb"/><circle cx="152" cy="62" r="3.8" class="train-arch-index-viz__nb"/>
+        </g>
+        <g class="train-arch-viz__hit train-arch-index-viz__probe" data-arch-piece="query" aria-hidden="true">
+          <polygon points="184,44 192,52 184,60 176,52" class="train-arch-index-viz__probe-shape"/>
+        </g>
+        <g class="train-arch-viz__hit train-arch-index-viz__flatip" data-arch-piece="flatip" aria-hidden="true">
+          <rect x="248" y="4" width="102" height="20" rx="4" class="train-arch-index-viz__chip-bg"/>
+          <text x="299" y="17.5" text-anchor="middle" class="train-arch-index-viz__chip-txt">IndexFlatIP · cos ≡ dot</text>
+        </g>
+      </svg>
+    </div>
+    <p class="train-arch-panel__foot"><span class="mono">faiss_index.bin</span> · gallery rows · search(query, k)</p>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro query_panel() %}
+<div class="train-arch-viz train-arch-viz--query train-arch-viz--html js-arch-viz" data-viz="query" aria-hidden="true">
+  <div class="train-arch-panel train-arch-panel--infer">
+    <p class="train-arch-panel__kicker">128² · <span class="mono">eval_tf</span></p>
+    <div class="train-arch-index-viz train-arch-index-viz--embed2d train-arch-pipeline-viz" aria-hidden="true">
+      <svg class="train-arch-index-viz__svg train-arch-pipeline-viz__svg" viewBox="0 0 360 104" xmlns="http://www.w3.org/2000/svg" focusable="false">
+        <defs>
+          <pattern id="train-arch-q-grid" width="14" height="14" patternUnits="userSpaceOnUse">
+            <path d="M14 0H0V14" fill="none" stroke="rgba(28,25,23,0.07)" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="360" height="104" rx="6" fill="#f5f5f4" stroke="var(--line-strong)" stroke-width="1"/>
+        <rect x="1" y="1" width="358" height="102" rx="5" fill="url(#train-arch-q-grid)" opacity="0.9"/>
+        <text x="10" y="17" class="train-arch-index-viz__svg-cap train-arch-pipeline-viz__svg-cap">eval · encode · retrieve</text>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node train-arch-pipeline-viz__node--stack" data-arch-piece="eval">
+          <rect x="8" y="30" width="92" height="50" rx="5" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--infer"/>
+          <text x="20" y="50" class="train-arch-pipeline-viz__svg-title">eval_tf</text>
+          <text x="20" y="64" class="train-arch-pipeline-viz__svg-sub">128² · tensor · μσ</text>
+        </g>
+        <path d="M102 55h14" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node train-arch-pipeline-viz__node--stack" data-arch-piece="same">
+          <rect x="118" y="30" width="124" height="50" rx="5" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--infer"/>
+          <text x="130" y="50" class="train-arch-pipeline-viz__svg-title">Encoder</text>
+          <text x="130" y="64" class="train-arch-pipeline-viz__svg-sub">same weights · 128-d L2</text>
+        </g>
+        <path d="M244 55h14" class="train-arch-pipeline-viz__flow-arrow" fill="none"/>
+        <g class="train-arch-viz__hit train-arch-pipeline-viz__node train-arch-pipeline-viz__node--stack" data-arch-piece="topk">
+          <rect x="260" y="30" width="92" height="50" rx="5" class="train-arch-pipeline-viz__node-rect train-arch-pipeline-viz__node-rect--infer"/>
+          <text x="272" y="50" class="train-arch-pipeline-viz__svg-title">top-k</text>
+          <text x="272" y="64" class="train-arch-pipeline-viz__svg-sub">FAISS · session k</text>
+        </g>
+      </svg>
+    </div>
+    <p class="train-arch-panel__foot">query vector → IndexFlatIP.search</p>
+  </div>
+</div>
+{% endmacro %}

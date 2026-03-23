@@ -1,0 +1,184 @@
+{% import 'partials/arch_viz_macros.html' as archv %}
+<section class="train-arch train-arch--compact train-arch--pills" aria-labelledby="train-arch-kicker">
+  <div class="train-arch-inner">
+    <header class="train-arch-head">
+      <p id="train-arch-kicker" class="train-arch-kicker">Pipeline</p>
+    </header>
+    <div class="train-arch-surface">
+      <div class="train-arch-layout">
+        <aside class="train-arch-layout__rail" aria-label="Pipeline steps">
+          <nav class="train-arch-pills" aria-label="Pipeline steps — select one to show details">
+            <div class="train-arch-pills__track train-arch-pills__track--rail">
+              <div class="train-arch-pills__group">
+                <p class="train-arch-pills__subhead">Build</p>
+                <button type="button" class="train-arch-pill" id="train-arch-tab-train" data-pipeline-step="train" aria-controls="train-arch-panel-train" aria-pressed="false">Augment</button>
+                <span class="train-arch-pills__sep train-arch-pills__sep--down" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                </span>
+                <button type="button" class="train-arch-pill" id="train-arch-tab-embed" data-pipeline-step="embed" aria-controls="train-arch-panel-embed" aria-pressed="false">Encoder</button>
+                <span class="train-arch-pills__sep train-arch-pills__sep--down" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                </span>
+                <button type="button" class="train-arch-pill" id="train-arch-tab-space" data-pipeline-step="space" aria-controls="train-arch-panel-space" aria-pressed="false">Space</button>
+              </div>
+              <div class="train-arch-pills__group train-arch-pills__group--infer">
+                <p class="train-arch-pills__subhead">Retrieve</p>
+                <button type="button" class="train-arch-pill" id="train-arch-tab-index" data-pipeline-step="index" aria-controls="train-arch-panel-index" aria-pressed="false">Index</button>
+                <span class="train-arch-pills__sep train-arch-pills__sep--down" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                </span>
+                <button type="button" class="train-arch-pill" id="train-arch-tab-query" data-pipeline-step="query" aria-controls="train-arch-panel-query" aria-pressed="false">Query</button>
+              </div>
+            </div>
+            <p class="train-arch-pills__hint muted">Select a step to inspect. Click again to collapse.</p>
+          </nav>
+        </aside>
+
+        <div class="train-arch-layout__stage">
+      <div class="train-arch-detail" data-train-arch-detail>
+        <div
+          id="train-arch-panel-train"
+          class="train-arch-detail__panel"
+          data-panel-step="train"
+          role="region"
+          aria-labelledby="train-arch-tab-train"
+          hidden
+        >
+          <article
+            class="train-arch-node train-arch-node--panel train-arch-stage"
+            tabindex="0"
+            data-phase="train"
+            data-arch-step="train"
+            aria-label="Training augmentations: Resize, RRC, flip, rotation, color jitter, ToTensor, ImageNet normalize, RandomErasing"
+          >
+            <div class="train-arch-node__tilt">
+              {{ archv.augment_panel() }}
+              <h3 class="train-arch-node__title">Augment</h3>
+            </div>
+          </article>
+        </div>
+
+        <div
+          id="train-arch-panel-embed"
+          class="train-arch-detail__panel"
+          data-panel-step="embed"
+          role="region"
+          aria-labelledby="train-arch-tab-embed"
+          hidden
+        >
+          <article
+            class="train-arch-node train-arch-node--panel train-arch-stage"
+            tabindex="0"
+            data-phase="train"
+            data-arch-step="embed"
+            aria-label="ResNet18 backbone with trainable layer3, layer4, pool; embedding head 512 to 128, L2 for retrieval"
+          >
+            <div class="train-arch-node__tilt">
+              {{ archv.encode_panel() }}
+              <h3 class="train-arch-node__title">Encoder</h3>
+            </div>
+          </article>
+        </div>
+
+        <div
+          id="train-arch-panel-space"
+          class="train-arch-detail__panel"
+          data-panel-step="space"
+          role="region"
+          aria-labelledby="train-arch-tab-space"
+          hidden
+        >
+          {% if categories %}
+          <article
+            class="train-arch-node train-arch-node--globe train-arch-node--panel train-arch-stage"
+            tabindex="0"
+            data-phase="train"
+            data-arch-step="globe"
+            aria-label="Category embedding space: interactive sphere of class labels"
+          >
+            <div class="train-arch-node__tilt">
+              <div class="train-arch-globe-card">
+                <div class="train-arch-globe-wrap">
+                  <div class="train-sphere-viewport train-sphere-viewport--process" id="train-sphere-viewport" aria-label="Categories">
+                    <div class="train-sphere-inner" id="train-sphere-inner" role="list"></div>
+                  </div>
+                  <p class="train-sphere-hint train-sphere-hint--process">{{ categories|length }} labels</p>
+                </div>
+              </div>
+              <h3 class="train-arch-node__title">Space</h3>
+              <script type="application/json" id="train-sphere-data">{{ categories|tojson }}</script>
+            </div>
+          </article>
+          {% else %}
+          <article
+            class="train-arch-node train-arch-node--globe train-arch-node--placeholder train-arch-node--panel train-arch-stage"
+            tabindex="0"
+            data-phase="train"
+            data-arch-step="globe-off"
+            aria-label="Category space preview: no class labels in features file"
+          >
+            <div class="train-arch-node__tilt">
+              <div class="train-arch-globe-card">
+                <div class="train-arch-viz train-arch-viz--placeholder js-arch-sphere-placeholder" aria-hidden="true">
+                  <div class="train-arch-placeholder-globe js-arch-placeholder-rotate">
+                    <div class="train-arch-placeholder-globe__sphere" aria-hidden="true"></div>
+                    <p class="train-arch-placeholder-globe__title">No category labels</p>
+                    <p class="train-arch-placeholder-globe__hint">Add a valid features index with <strong>category</strong> fields, or check the path in Train settings.</p>
+                  </div>
+                </div>
+              </div>
+              <h3 class="train-arch-node__title">Space</h3>
+            </div>
+          </article>
+          {% endif %}
+        </div>
+
+        <div
+          id="train-arch-panel-index"
+          class="train-arch-detail__panel"
+          data-panel-step="index"
+          role="region"
+          aria-labelledby="train-arch-tab-index"
+          hidden
+        >
+          <article
+            class="train-arch-node train-arch-node--panel train-arch-stage"
+            tabindex="0"
+            data-phase="train"
+            data-arch-step="index"
+            aria-label="FAISS index and features_paths from precompute"
+          >
+            <div class="train-arch-node__tilt">
+              {{ archv.index_panel() }}
+              <h3 class="train-arch-node__title">Index</h3>
+            </div>
+          </article>
+        </div>
+
+        <div
+          id="train-arch-panel-query"
+          class="train-arch-detail__panel"
+          data-panel-step="query"
+          role="region"
+          aria-labelledby="train-arch-tab-query"
+          hidden
+        >
+          <article
+            class="train-arch-node train-arch-node--panel train-arch-stage"
+            tabindex="0"
+            data-phase="infer"
+            data-arch-step="query"
+            aria-label="Query: eval_tf resize 128, same encoder, k nearest in FAISS"
+          >
+            <div class="train-arch-node__tilt">
+              {{ archv.query_panel() }}
+              <h3 class="train-arch-node__title">Query</h3>
+            </div>
+          </article>
+        </div>
+      </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</section>

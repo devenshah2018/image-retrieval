@@ -145,8 +145,6 @@ def _defaults() -> None:
         session["features_path"] = DEFAULT_FEATURES_PATHS_FILE
     if "num_results" not in session:
         session["num_results"] = 5
-    if "show_categories" not in session:
-        session["show_categories"] = False
     if "rclone_cwd" not in session:
         session["rclone_cwd"] = ""
     if "rclone_remote" not in session:
@@ -191,7 +189,7 @@ def _load_indexed_paths():
 
 def _categories_for_sidebar():
     fp = session.get("features_path", DEFAULT_FEATURES_PATHS_FILE)
-    if not session.get("show_categories") or not fp or not os.path.isfile(fp):
+    if not fp or not os.path.isfile(fp):
         return []
     try:
         with open(fp, "r") as f:
@@ -300,7 +298,6 @@ def index():
 @bp.route("/train", methods=["GET"])
 def train_page():
     _sync_rcd_and_session()
-    categories = _categories_for_sidebar()
     webapp = get_webapp_root()
     train_script = webapp / "train_quick.py"
     precompute_script = webapp / "precompute.sh"
@@ -319,7 +316,6 @@ def train_page():
         pipeline_stream_url=url_for("main.train_pipeline_stream"),
         device=_device_str(),
         index_count=_index_count(),
-        categories=categories,
     )
 
 
@@ -361,10 +357,14 @@ def dataset_page():
 
 @bp.route("/notebooks", methods=["GET"])
 def notebooks_page():
+    _defaults()
+    _sid()
+    categories = _categories_for_sidebar()
     return render_template(
         "notebooks.html",
         page_id="notebooks",
         notebooks=_load_notebooks(),
+        categories=categories,
     )
 
 
@@ -526,7 +526,6 @@ def settings():
         )
     except ValueError:
         session["num_results"] = 5
-    session["show_categories"] = request.form.get("show_categories") == "on"
     session.modified = True
     flash("Settings updated.", "success")
     return _redirect_after_settings()
