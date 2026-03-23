@@ -11,20 +11,23 @@ class ResNetTransferModel(nn.Module):
         weights = ResNet18_Weights.DEFAULT if pretrained else None
         self.resnet = resnet18(weights=weights)
 
-        # Freeze early layers to prevent overfitting
-        # Only train the last few layers (fine-tuning)
-        for param in list(self.resnet.parameters())[:-8]:  # Freeze all except the last 2 blocks
+        # Match transfer-learning notebook: freeze backbone, then unfreeze layer3, layer4, avgpool
+        for param in self.resnet.parameters():
             param.requires_grad = False
+        for module in (self.resnet.layer3, self.resnet.layer4, self.resnet.avgpool):
+            for param in module.parameters():
+                param.requires_grad = True
 
         # Replace the final fully connected layer
         # ResNet18's final layer input features is 512
         self.resnet.fc = nn.Identity()  # Remove the final FC layer
 
-        # Add our custom classifier with dropout
+        # Embedding head: BN + ReLU + dropout (notebook) before classifier
         self.embedding = nn.Sequential(
             nn.Linear(512, embedding_size),
             nn.BatchNorm1d(embedding_size),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.3),
         )
 
         # Classification layer

@@ -96,7 +96,24 @@ def main():
     parser.add_argument("--output", default="weights/model.pth", help="Output checkpoint path")
     parser.add_argument("--epochs", type=int, default=1, help="Training epochs")
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size")
-    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
+    parser.add_argument(
+        "--lr",
+        type=float,
+        default=5e-4,
+        help="Learning rate (notebook default: 5e-4)",
+    )
+    parser.add_argument(
+        "--weight-decay",
+        type=float,
+        default=1e-3,
+        help="AdamW weight decay",
+    )
+    parser.add_argument(
+        "--label-smoothing",
+        type=float,
+        default=0.1,
+        help="CrossEntropyLoss label smoothing (0 disables)",
+    )
     parser.add_argument("--val-ratio", type=float, default=0.1, help="Validation split ratio")
     parser.add_argument(
         "--max-train-samples",
@@ -132,12 +149,18 @@ def main():
 
     print(f"Train samples: {len(train_samples)} | Val samples: {len(val_samples)} | Classes: {num_classes}")
 
+    # Augmentations aligned with notebooks/transferlearning-resnet-retrieval.ipynb
     train_tf = transforms.Compose(
         [
-            transforms.Resize((128, 128)),
+            transforms.Resize((144, 144)),
+            transforms.RandomResizedCrop(128, scale=(0.7, 1.0), ratio=(0.9, 1.1)),
             transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(15),
+            transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.1),
+            transforms.RandomGrayscale(p=0.05),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            transforms.RandomErasing(p=0.15, scale=(0.02, 0.2)),
         ]
     )
     eval_tf = transforms.Compose(
@@ -156,9 +179,17 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=num_workers)
 
     model = ResNetTransferModel(num_classes=num_classes, embedding_size=128, pretrained=True).to(device)
-    criterion = nn.CrossEntropyLoss()
+    crit_kwargs = {}
+    if args.label_smoothing > 0:
+        crit_kwargs["label_smoothing"] = args.label_smoothing
+    criterion = nn.CrossEntropyLoss(**crit_kwargs)
     optimizer = torch.optim.AdamW(
-        [p for p in model.parameters() if p.requires_grad], lr=args.lr, weight_decay=1e-4
+        [p for p in model.parameters() if p.requires_grad],
+        lr=args.lr,
+        weight_decay=args.weight_decay,
+    )
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=max(1, args.epochs), eta_min=1e-6
     )
 
     stream_progress = os.environ.get("FLASK_TRAIN_STREAM") == "1" and not sys.stdout.isatty()
@@ -208,8 +239,10 @@ def main():
         print(
             f"Epoch {epoch}: "
             f"train_loss={train_loss:.4f}, train_acc={train_acc:.4f}, "
-            f"val_loss={val_loss:.4f}, val_acc={val_acc:.4f}"
+            f"val_loss={val_loss:.4f}, val_acc={val_acc:.4f}, "
+            f"lr={scheduler.get_last_lr()[0]:.2e}"
         )
+        scheduler.step()
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
