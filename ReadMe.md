@@ -125,13 +125,3 @@ Work in **`notebooks/`** with the venv only.
 ## Acknowledgements
 
 This project was developed as part of **The Build Fellowship** program by **OpenAvenue Ventures**, a transformative experience that provided the foundation for building real-world engineering solutions. Special thanks to **Kamalesh Kalirathinam**, **Paul Kefer**, and the **AI-Powered Image Retrieval** team for providing mentorship and support throughout the development process.
-
----
-
-## Repository layout
-
-| Path | Role |
-|------|------|
-| `webapp/` | Flask app (`flask_app/`), UI assets, `train_quick.py`, weights, `data/`, `src/`, `utils/` |
-| `notebooks/` | Jupyter notebooks for experiments and teaching |
-| `requirements.txt` | Pip dependencies for the root **`.venv`** (notebooks) |
