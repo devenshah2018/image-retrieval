@@ -6,23 +6,6 @@
   <div class="page-hero-text">
     <p class="eyebrow">Search</p>
     <h1 class="page-title">Query</h1>
-    {% if not search_results %}
-    <form class="query-hero-settings" method="post" action="{{ url_for('main.settings') }}">
-      <input type="hidden" name="redirect_to" value="query">
-      <input type="hidden" name="faiss_path" value="{{ session.get('faiss_path', '') }}">
-      <input type="hidden" name="features_path" value="{{ session.get('features_path', '') }}">
-      <span class="query-hero-settings__cluster">
-        <label class="query-hero-settings__inline" for="num_results_query">
-          <span class="query-hero-settings__hint">Results</span>
-          <select class="input query-hero-select" id="num_results_query" name="num_results" onchange="this.form.submit()">
-            {% for n in range(1, 11) %}
-              <option value="{{ n }}" {% if session.get('num_results', 5) == n %}selected{% endif %}>{{ n }}</option>
-            {% endfor %}
-          </select>
-        </label>
-      </span>
-    </form>
-    {% endif %}
   </div>
 </header>
 
@@ -91,7 +74,22 @@
           </label>
         </form>
         {% include 'partials/rclone_panel.html' %}
-        <div class="query-actions">
+        <div class="query-actions query-actions--toolbar">
+          <form class="query-k-form" method="post" action="{{ url_for('main.settings') }}" aria-label="Result count">
+            <input type="hidden" name="redirect_to" value="query">
+            <input type="hidden" name="faiss_path" value="{{ session.get('faiss_path', '') }}">
+            <input type="hidden" name="features_path" value="{{ session.get('features_path', '') }}">
+            <div class="query-k-field">
+              <label class="query-k-field__label" for="num_results_query">Top‑K</label>
+              <div class="query-k-field__control">
+                <select class="query-k-select" id="num_results_query" name="num_results" onchange="this.form.submit()">
+                  {% for n in range(1, 11) %}
+                    <option value="{{ n }}" {% if session.get('num_results', 5) == n %}selected{% endif %}>{{ n }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </form>
           <form method="post" action="{{ url_for('main.search') }}">
             <button type="submit" class="btn btn-primary btn-wide" {% if not has_query %}disabled{% endif %}>Search</button>
           </form>

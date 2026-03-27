@@ -1,8 +1,11 @@
 {% import 'partials/arch_viz_macros.html' as archv %}
-<section class="train-arch train-arch--compact train-arch--pills" aria-labelledby="train-arch-kicker">
+<section class="train-arch train-arch--compact train-arch--pills train-arch--notebooks" aria-labelledby="train-arch-kicker">
   <div class="train-arch-inner">
     <header class="train-arch-head">
-      <p id="train-arch-kicker" class="train-arch-kicker">Pipeline</p>
+      <div class="train-arch-head__intro">
+        <p id="train-arch-kicker" class="train-arch-kicker">Pipeline</p>
+        <p class="train-arch-lede">Training, embedding, indexing, and query — step through each stage.</p>
+      </div>
     </header>
     <div class="train-arch-surface">
       <div class="train-arch-layout">
@@ -30,7 +33,6 @@
                 <button type="button" class="train-arch-pill" id="train-arch-tab-query" data-pipeline-step="query" aria-controls="train-arch-panel-query" aria-pressed="false">Query</button>
               </div>
             </div>
-            <p class="train-arch-pills__hint muted">Select a step to inspect. Click again to collapse.</p>
           </nav>
         </aside>
 

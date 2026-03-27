@@ -25,10 +25,7 @@
       <div class="callout callout-blue query-rclone-callout">
         <p class="mb-0">Open <strong>Configs</strong> in the rclone window to add Google Drive or other remotes.</p>
         <p class="mt-sm"><a class="link" href="{{ rcd_url }}" target="_blank" rel="noopener noreferrer">Open rclone web GUI</a></p>
-        {% if rcd_user and rcd_password %}
-          <pre class="mono mono-block mt-sm">User: {{ rcd_user }}
-Pass: {{ rcd_password }}</pre>
-        {% endif %}
+        <p class="muted small mt-sm">No sign-in needed — the config server listens on <span class="mono">127.0.0.1</span> only.</p>
       </div>
     {% endif %}
 

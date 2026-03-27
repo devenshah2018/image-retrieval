@@ -5,14 +5,11 @@ from __future__ import annotations
 
 import json
 import os
-import secrets
 import socket
 import time
 import shutil
-import string
 import subprocess
 import tempfile
-from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 IMAGE_EXTENSIONS = frozenset(
@@ -261,26 +258,14 @@ def is_image_name(name: str) -> bool:
     return ext in IMAGE_EXTENSIONS
 
 
-@dataclass
-class RcdConfig:
-    port: int
-    user: str
-    password: str
+def start_rcd_webgui(port: int) -> Tuple[Optional[subprocess.Popen], str]:
+    """Start rclone rcd with web GUI on 127.0.0.1:port.
 
-
-def generate_rc_credentials() -> Tuple[str, str]:
-    alphabet = string.ascii_letters + string.digits
-    user = "app"
-    pw = "".join(secrets.choice(alphabet) for _ in range(24))
-    return user, pw
-
-
-def start_rcd_webgui(
-    port: int,
-    rc_user: str,
-    rc_pass: str,
-) -> Tuple[Optional[subprocess.Popen], str]:
-    """Start rclone rcd with web GUI on 127.0.0.1:port. Caller stores Popen in session_state."""
+    We use ``--rc-no-auth`` so the web GUI does not use HTTP Basic Auth. The
+    SPA issues many XHR calls; without this flag, rclone still prompts for
+    username/password and the browser loops on failed auth. We do not set
+    ``--rc-user`` / ``--rc-pass``. Binding to 127.0.0.1 only keeps exposure local.
+    """
     if not rclone_binary():
         return None, "rclone not found in PATH"
     addr = f"127.0.0.1:{port}"
@@ -289,9 +274,8 @@ def start_rcd_webgui(
         "rcd",
         "--rc-web-gui",
         "--rc-web-gui-no-open-browser",
+        "--rc-no-auth",
         f"--rc-addr={addr}",
-        f"--rc-user={rc_user}",
-        f"--rc-pass={rc_pass}",
     ]
     try:
         proc = subprocess.Popen(

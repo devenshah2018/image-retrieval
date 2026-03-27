@@ -4,6 +4,8 @@
 (function () {
   var root = document.querySelector(".train-arch");
   if (!root) return;
+  /** Notebooks pipeline: no pointer parallax — keeps the UI stable and enterprise-sharp. */
+  var notebooksStatic = root.classList.contains("train-arch--notebooks");
 
   /* Pills: one detail panel at a time; default none expanded */
   var pills = root.querySelectorAll(".train-arch-pill[data-pipeline-step]");
@@ -66,7 +68,9 @@
     if (!tilt) return;
 
     var skipParallax =
-      reduceMotion || el.classList.contains("train-arch-node--globe");
+      reduceMotion ||
+      el.classList.contains("train-arch-node--globe") ||
+      notebooksStatic;
 
     el.addEventListener("mousemove", function (ev) {
       if (skipParallax) return;

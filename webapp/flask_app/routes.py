@@ -276,7 +276,6 @@ def index():
     browse = _rclone_browse()
     browse_path_parts = _remote_path_parts(browse.get("cwd"))
     rclone_at_root = len(browse_path_parts) == 0
-    rcd_state = rcd_registry.get_state(sid)
     return render_template(
         "index.html",
         page_id="query",
@@ -286,8 +285,6 @@ def index():
         rclone_available=bool(_ru().rclone_binary()),
         rcd_alive=rcd_registry.rcd_alive(sid),
         rcd_url=rcd_registry.gui_url_for_session(sid),
-        rcd_user=rcd_state.get("user"),
-        rcd_password=rcd_state.get("password"),
         remotes=session.get("remotes_list") or [],
         browse=browse,
         browse_path_parts=browse_path_parts,

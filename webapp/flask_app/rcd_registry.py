@@ -17,8 +17,6 @@ def get_state(sid: str) -> Dict[str, Any]:
         _registry[sid] = {
             "proc": None,
             "port": 5572,
-            "user": None,
-            "password": None,
         }
     return _registry[sid]
 
@@ -38,10 +36,7 @@ def start_for_session(sid: str) -> tuple[bool, str, Optional[int]]:
     st["proc"] = None
     port = ru.pick_free_port(5572)
     st["port"] = port
-    u, pw = ru.generate_rc_credentials()
-    st["user"] = u
-    st["password"] = pw
-    proc, err = ru.start_rcd_webgui(port, u, pw)
+    proc, err = ru.start_rcd_webgui(port)
     if not proc:
         return False, err or "Failed to start rclone rcd", None
     st["proc"] = proc
